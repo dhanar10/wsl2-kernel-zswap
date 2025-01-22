@@ -5,7 +5,8 @@
 set -e
 set -o pipefail
 
-sudo apt install build-essential flex bison libssl-dev libelf-dev libncurses-dev autoconf libudev-dev libtool
+sudo apt update
+sudo apt install build-essential flex bison libssl-dev libelf-dev libncurses-dev autoconf libudev-dev libtool dwarves
 
 WSL2_KERNEL_VERSION="$(uname -r | grep -o '^[0-9\.]\+')"
 
