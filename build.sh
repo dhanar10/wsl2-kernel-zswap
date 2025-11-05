@@ -65,8 +65,7 @@ if [ "$KERNEL_MAJOR_VERSION" -ge 6 ]; then
     echo "Building and packaging kernel modules for WSL2 kernel 6.x..."
     
     # Create temporary directory for modules installation
-    MODULES_TEMP=$(mktemp -d)
-    if [ -z "${MODULES_TEMP}" ]; then
+    if ! MODULES_TEMP=$(mktemp -d); then
         echo "Error: Failed to create temporary directory"
         exit 1
     fi
