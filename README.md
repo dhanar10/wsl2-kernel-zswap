@@ -12,7 +12,7 @@ Tested on:
 
 ```bash
 # Download and review the script first
-curl -O https://raw.githubusercontent.com/crramirez/wsl2-kernel-zswap/main/build.sh
+curl -O https://raw.githubusercontent.com/dhanar10/wsl2-kernel-zswap/main/build.sh
 less build.sh
 
 # After reviewing, run it
@@ -22,7 +22,7 @@ bash build.sh
 ## One-liner (use at your own risk)
 
 ```bash
-curl https://raw.githubusercontent.com/crramirez/wsl2-kernel-zswap/main/build.sh | bash
+curl https://raw.githubusercontent.com/dhanar10/wsl2-kernel-zswap/main/build.sh | bash
 ```
 
 The script automatically detects your kernel version and:
