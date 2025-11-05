@@ -6,7 +6,7 @@ set -e
 set -o pipefail
 
 sudo apt update
-sudo apt install build-essential flex bison libssl-dev libelf-dev libncurses-dev autoconf libudev-dev libtool dwarves
+sudo apt install build-essential flex bison libssl-dev libelf-dev libncurses-dev autoconf libudev-dev libtool dwarves cpio qemu-utils
 
 WSL2_KERNEL_VERSION="$(uname -r | grep -o '^[0-9\.]\+')"
 KERNEL_MAJOR_VERSION="$(echo "${WSL2_KERNEL_VERSION}" | cut -d. -f1)"
@@ -64,29 +64,52 @@ make -j $(nproc)
 if [ "$KERNEL_MAJOR_VERSION" -ge 6 ]; then
     echo "Building and packaging kernel modules for WSL2 kernel 6.x..."
     
-    # Create temporary directory for modules installation
-    if ! MODULES_TEMP=$(mktemp -d); then
+    # Save current directory
+    BUILD_DIR=$(pwd)
+    
+    # Install modules to a modules directory
+    if ! make modules_install INSTALL_MOD_PATH="${BUILD_DIR}/modules"; then
+        echo "Error: Failed to install kernel modules"
+        exit 1
+    fi
+    
+    # Get kernel release version
+    KERNEL_RELEASE=$(make -s kernelrelease)
+    
+    # Create VHDX containing the modules
+    echo "Creating modules VHDX..."
+    
+    # Calculate modules size (+ 256MiB for slack)
+    MODULES_SIZE=$(du -bs "${BUILD_DIR}/modules" | awk '{print $1;}')
+    MODULES_SIZE=$((MODULES_SIZE + (256*(1<<20))))
+    
+    # Create temporary directory for VHDX creation
+    if ! TMP_DIR=$(mktemp -d); then
         echo "Error: Failed to create temporary directory"
         exit 1
     fi
     
-    # Save current directory
-    BUILD_DIR=$(pwd)
+    # Create a blank image file
+    dd if=/dev/zero of="${TMP_DIR}/modules.img" bs=1024 count=$((MODULES_SIZE / 1024)) status=progress
     
-    # Install modules to temporary directory
-    if ! make modules_install INSTALL_MOD_PATH="${MODULES_TEMP}"; then
-        echo "Error: Failed to install kernel modules"
-        rm -rf "${MODULES_TEMP}"
-        exit 1
-    fi
+    # Set up filesystem and mount
+    LO_DEV=$(sudo losetup --find --show "${TMP_DIR}/modules.img")
+    sudo mkfs -t ext4 "${LO_DEV}"
+    mkdir "${TMP_DIR}/modules_img"
+    sudo mount "${LO_DEV}" "${TMP_DIR}/modules_img"
+    sudo chmod a+rw "${TMP_DIR}/modules_img"
     
-    # Create tar.gz archive of modules directly in build directory
-    cd "${MODULES_TEMP}"
-    tar -czf "${BUILD_DIR}/modules.tar.gz" lib/
-    cd "${BUILD_DIR}"
+    # Copy over the modules
+    sudo cp -r "${BUILD_DIR}/modules/lib/modules/${KERNEL_RELEASE}"/* "${TMP_DIR}/modules_img"
+    sudo umount "${TMP_DIR}/modules_img"
+    sudo losetup -d "${LO_DEV}"
     
-    # Cleanup
-    rm -rf "${MODULES_TEMP}"
+    # Convert to VHDX
+    qemu-img convert -O vhdx "${TMP_DIR}/modules.img" "${BUILD_DIR}/modules.vhdx"
+    
+    # Cleanup temporary files
+    rm -rf "${TMP_DIR}"
+    rm -rf "${BUILD_DIR}/modules"
     
     cat << EOF
 
@@ -94,16 +117,14 @@ Kernel build complete for WSL2 kernel ${WSL2_KERNEL_VERSION}!
 
 Next steps:
 1. Copy "arch/x86/boot/bzImage" to "/mnt/c/bzImage"
-2. Copy "modules.tar.gz" to "/mnt/c/modules.tar.gz"
+2. Copy "modules.vhdx" to "/mnt/c/modules.vhdx"
 3. Add the following to your ".wslconfig" file in your Windows user directory:
 
 [wsl2]
 kernel=C:\\\\bzImage
+kernelModules=C:\\\\modules.vhdx
 
-4. Extract the modules in your WSL2 instance:
-   sudo tar -xzf /mnt/c/modules.tar.gz -C /
-
-5. Restart your WSL2 instance:
+4. Restart your WSL2 instance:
    wsl --shutdown
    
 Then reopen your WSL2 terminal. The new kernel with zswap support will be active.

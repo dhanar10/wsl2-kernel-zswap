@@ -27,7 +27,7 @@ curl https://raw.githubusercontent.com/crramirez/wsl2-kernel-zswap/main/build.sh
 
 The script automatically detects your kernel version and:
 - For kernel 5.x: builds the kernel with CONFIG_FRONTSWAP support
-- For kernel 6.x: builds the kernel without CONFIG_FRONTSWAP (removed in 6.x) and generates a modules.tar.gz file containing kernel modules
+- For kernel 6.x: builds the kernel without CONFIG_FRONTSWAP (removed in 6.x) and generates a modules.vhdx file containing kernel modules
 
 # Installation
 
@@ -47,17 +47,14 @@ Then restart WSL: `wsl --shutdown`
 After building:
 
 1. Copy `arch/x86/boot/bzImage` to `/mnt/c/bzImage`
-2. Copy `modules.tar.gz` to `/mnt/c/modules.tar.gz`
+2. Copy `modules.vhdx` to `/mnt/c/modules.vhdx`
 3. Configure `.wslconfig` in your Windows user directory:
    ```
    [wsl2]
    kernel=C:\\bzImage
+   kernelModules=C:\\modules.vhdx
    ```
-4. Extract modules in your WSL2 instance:
-   ```bash
-   sudo tar -xzf /mnt/c/modules.tar.gz -C /
-   ```
-5. Restart WSL: `wsl --shutdown`
+4. Restart WSL: `wsl --shutdown`
 
 # Verifying zswap
 
