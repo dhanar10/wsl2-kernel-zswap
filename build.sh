@@ -9,7 +9,16 @@ sudo apt update
 sudo apt install build-essential flex bison libssl-dev libelf-dev libncurses-dev autoconf libudev-dev libtool dwarves
 
 WSL2_KERNEL_VERSION="$(uname -r | grep -o '^[0-9\.]\+')"
-KERNEL_MAJOR_VERSION="$(echo ${WSL2_KERNEL_VERSION} | cut -d. -f1)"
+KERNEL_MAJOR_VERSION="$(echo "${WSL2_KERNEL_VERSION}" | cut -d. -f1)"
+
+# Validate kernel version was extracted correctly
+if [ -z "${KERNEL_MAJOR_VERSION}" ] || ! [[ "${KERNEL_MAJOR_VERSION}" =~ ^[0-9]+$ ]]; then
+    echo "Error: Could not determine kernel major version from: $(uname -r)"
+    echo "Expected format: X.Y.Z.W (e.g., 5.15.153.1 or 6.6.36.3)"
+    exit 1
+fi
+
+echo "Detected WSL2 kernel version: ${WSL2_KERNEL_VERSION} (major: ${KERNEL_MAJOR_VERSION})"
 
 wget -c https://github.com/microsoft/WSL2-Linux-Kernel/archive/refs/tags/linux-msft-wsl-${WSL2_KERNEL_VERSION}.tar.gz
 tar xvf linux-msft-wsl-${WSL2_KERNEL_VERSION}.tar.gz
