@@ -8,6 +8,19 @@ Tested on:
 
 # Building
 
+## Quick Start (review script first recommended)
+
+```bash
+# Download and review the script first
+curl -O https://raw.githubusercontent.com/crramirez/wsl2-kernel-zswap/main/build.sh
+less build.sh
+
+# After reviewing, run it
+bash build.sh
+```
+
+## One-liner (use at your own risk)
+
 ```bash
 curl https://raw.githubusercontent.com/crramirez/wsl2-kernel-zswap/main/build.sh | bash
 ```
