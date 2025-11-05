@@ -76,39 +76,15 @@ if [ "$KERNEL_MAJOR_VERSION" -ge 6 ]; then
     # Get kernel release version
     KERNEL_RELEASE=$(make -s kernelrelease)
     
-    # Create VHDX containing the modules
-    echo "Creating modules VHDX..."
-    
-    # Calculate modules size (+ 256MiB for slack)
-    MODULES_SIZE=$(du -bs "${BUILD_DIR}/modules" | awk '{print $1;}')
-    MODULES_SIZE=$((MODULES_SIZE + (256*(1<<20))))
-    
-    # Create temporary directory for VHDX creation
-    if ! TMP_DIR=$(mktemp -d); then
-        echo "Error: Failed to create temporary directory"
+    # Use Microsoft's gen_modules_vhdx.sh script
+    echo "Creating modules VHDX using Microsoft's gen_modules_vhdx.sh script..."
+    if ! sudo ./Microsoft/scripts/gen_modules_vhdx.sh "${BUILD_DIR}/modules" "${KERNEL_RELEASE}" "${BUILD_DIR}/modules.vhdx"; then
+        echo "Error: Failed to create modules VHDX"
+        rm -rf "${BUILD_DIR}/modules"
         exit 1
     fi
     
-    # Create a blank image file
-    dd if=/dev/zero of="${TMP_DIR}/modules.img" bs=1024 count=$((MODULES_SIZE / 1024)) status=progress
-    
-    # Set up filesystem and mount
-    LO_DEV=$(sudo losetup --find --show "${TMP_DIR}/modules.img")
-    sudo mkfs -t ext4 "${LO_DEV}"
-    mkdir "${TMP_DIR}/modules_img"
-    sudo mount "${LO_DEV}" "${TMP_DIR}/modules_img"
-    sudo chmod a+rw "${TMP_DIR}/modules_img"
-    
-    # Copy over the modules
-    sudo cp -r "${BUILD_DIR}/modules/lib/modules/${KERNEL_RELEASE}"/* "${TMP_DIR}/modules_img"
-    sudo umount "${TMP_DIR}/modules_img"
-    sudo losetup -d "${LO_DEV}"
-    
-    # Convert to VHDX
-    qemu-img convert -O vhdx "${TMP_DIR}/modules.img" "${BUILD_DIR}/modules.vhdx"
-    
-    # Cleanup temporary files
-    rm -rf "${TMP_DIR}"
+    # Cleanup modules directory
     rm -rf "${BUILD_DIR}/modules"
     
     cat << EOF
