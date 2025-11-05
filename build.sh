@@ -99,7 +99,7 @@ if [[ "${KERNEL_MAJOR_VERSION}" -ge 6 ]]; then
 
   # Cleanup modules directory and remove trap
   trap - EXIT
-  rm -rf "${BUILD_DIR}/modules"
+  cleanup_modules
 
   cat << EOF
 
