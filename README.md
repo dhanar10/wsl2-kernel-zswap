@@ -21,6 +21,13 @@ bash build.sh
 
 ## One-liner (use at your own risk)
 
+> ⚠️ **Security Warning:**  
+> Piping a remotely fetched script directly to `bash` is risky.  
+> **Before running this command,** you should:
+> - Inspect the script at [build.sh](https://raw.githubusercontent.com/crramirez/wsl2-kernel-zswap/main/build.sh) in your browser.
+> - Optionally, verify its integrity using a checksum or signature if available.
+> - Only proceed if you trust the source and have reviewed the script.
+
 ```bash
 curl https://raw.githubusercontent.com/crramirez/wsl2-kernel-zswap/main/build.sh | bash
 ```

@@ -67,6 +67,14 @@ if [[ "${KERNEL_MAJOR_VERSION}" -ge 6 ]]; then
   # Save current directory
   BUILD_DIR=$(pwd)
 
+  # Set up cleanup trap to ensure modules directory is removed on error
+  cleanup_modules() {
+    if [[ -d "${BUILD_DIR}/modules" ]]; then
+      rm -rf "${BUILD_DIR}/modules"
+    fi
+  }
+  trap cleanup_modules EXIT
+
   # Install modules to a modules directory
   if ! make modules_install INSTALL_MOD_PATH="${BUILD_DIR}/modules"; then
     echo "Error: Failed to install kernel modules"
@@ -75,16 +83,22 @@ if [[ "${KERNEL_MAJOR_VERSION}" -ge 6 ]]; then
 
   # Get kernel release version
   KERNEL_RELEASE=$(make -s kernelrelease)
+  
+  # Validate kernel release was extracted correctly
+  if [[ -z "${KERNEL_RELEASE}" ]]; then
+    echo "Error: Could not determine kernel release version"
+    exit 1
+  fi
 
   # Use Microsoft's gen_modules_vhdx.sh script
   echo "Creating modules VHDX using Microsoft's gen_modules_vhdx.sh script..."
   if ! sudo ./Microsoft/scripts/gen_modules_vhdx.sh "${BUILD_DIR}/modules" "${KERNEL_RELEASE}" "${BUILD_DIR}/modules.vhdx"; then
     echo "Error: Failed to create modules VHDX"
-    rm -rf "${BUILD_DIR}/modules"
     exit 1
   fi
 
-  # Cleanup modules directory
+  # Cleanup modules directory and remove trap
+  trap - EXIT
   rm -rf "${BUILD_DIR}/modules"
 
   cat << EOF
