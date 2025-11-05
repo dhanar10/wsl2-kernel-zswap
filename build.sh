@@ -66,17 +66,21 @@ if [ "$KERNEL_MAJOR_VERSION" -ge 6 ]; then
     
     # Create temporary directory for modules installation
     MODULES_TEMP=$(mktemp -d)
+    if [ ! -d "${MODULES_TEMP}" ]; then
+        echo "Error: Failed to create temporary directory"
+        exit 1
+    fi
+    
+    # Save current directory
+    BUILD_DIR=$(pwd)
     
     # Install modules to temporary directory
     make modules_install INSTALL_MOD_PATH="${MODULES_TEMP}"
     
-    # Create tar.gz archive of modules
+    # Create tar.gz archive of modules directly in build directory
     cd "${MODULES_TEMP}"
-    tar -czf ../modules.tar.gz lib/
-    cd -
-    
-    # Move modules archive to a convenient location
-    mv "${MODULES_TEMP}/../modules.tar.gz" ./modules.tar.gz
+    tar -czf "${BUILD_DIR}/modules.tar.gz" lib/
+    cd "${BUILD_DIR}"
     
     # Cleanup
     rm -rf "${MODULES_TEMP}"
