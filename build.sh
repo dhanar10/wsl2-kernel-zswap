@@ -18,43 +18,34 @@ cd "WSL2-Linux-Kernel-linux-msft-wsl-${WSL2_KERNEL_VERSION}"
 
 cp Microsoft/config-wsl .config           # Use WSL default kernel config as the base
 
-# Add zswap configuration based on kernel version
-if [ "$KERNEL_MAJOR_VERSION" -lt 6 ]; then
-    # Kernel 5.x configuration with CONFIG_FRONTSWAP
-    cat << EOF >> .config
+# Add zswap configuration
+# Common configuration for all kernel versions
+cat << EOF >> .config
 
 CONFIG_CRYPTO_ZSTD=y
 CONFIG_ZSTD_COMMON=y
 CONFIG_ZSTD_COMPRESS=y
 
-CONFIG_FRONTSWAP=y
-CONFIG_ZSWAP=y
-CONFIG_ZSWAP_COMPRESSOR_DEFAULT_ZSTD=y
-CONFIG_ZSWAP_COMPRESSOR_DEFAULT="zstd"
-CONFIG_ZSWAP_ZPOOL_DEFAULT_ZBUD=y
-CONFIG_ZSWAP_ZPOOL_DEFAULT="zbud"
-CONFIG_ZSWAP_DEFAULT_ON=y
-CONFIG_ZPOOL=y
-CONFIG_ZBUD=y
 EOF
-else
-    # Kernel 6.x configuration (CONFIG_FRONTSWAP removed)
+
+# Add CONFIG_FRONTSWAP for kernel 5.x only (removed in 6.x)
+if [ "$KERNEL_MAJOR_VERSION" -lt 6 ]; then
     cat << EOF >> .config
-
-CONFIG_CRYPTO_ZSTD=y
-CONFIG_ZSTD_COMMON=y
-CONFIG_ZSTD_COMPRESS=y
-
-CONFIG_ZSWAP=y
-CONFIG_ZSWAP_COMPRESSOR_DEFAULT_ZSTD=y
-CONFIG_ZSWAP_COMPRESSOR_DEFAULT="zstd"
-CONFIG_ZSWAP_ZPOOL_DEFAULT_ZBUD=y
-CONFIG_ZSWAP_ZPOOL_DEFAULT="zbud"
-CONFIG_ZSWAP_DEFAULT_ON=y
-CONFIG_ZPOOL=y
-CONFIG_ZBUD=y
+CONFIG_FRONTSWAP=y
 EOF
 fi
+
+# Add remaining zswap configuration (common to all versions)
+cat << EOF >> .config
+CONFIG_ZSWAP=y
+CONFIG_ZSWAP_COMPRESSOR_DEFAULT_ZSTD=y
+CONFIG_ZSWAP_COMPRESSOR_DEFAULT="zstd"
+CONFIG_ZSWAP_ZPOOL_DEFAULT_ZBUD=y
+CONFIG_ZSWAP_ZPOOL_DEFAULT="zbud"
+CONFIG_ZSWAP_DEFAULT_ON=y
+CONFIG_ZPOOL=y
+CONFIG_ZBUD=y
+EOF
 
 make olddefconfig
 
