@@ -25,9 +25,13 @@ bash build.sh
 curl https://raw.githubusercontent.com/dhanar10/wsl2-kernel-zswap/main/build.sh | bash
 ```
 
-The script automatically detects your kernel version and:
-- For kernel 5.x: builds the kernel with CONFIG_FRONTSWAP support
-- For kernel 6.x: builds the kernel without CONFIG_FRONTSWAP (removed in 6.x) and generates a modules.vhdx file containing kernel modules
+The script inspects the downloaded kernel's Kconfig definitions and enables only
+the zswap options that kernel supports. This keeps older kernels that require
+`CONFIG_FRONTSWAP`, `CONFIG_ZPOOL`, and `CONFIG_ZBUD` working while avoiding
+removed options in newer kernels. It also enables
+`CONFIG_ZSWAP_SHRINKER_DEFAULT_ON` when available. Kernel 6.x builds additionally
+generate a `modules.vhdx` file containing kernel modules, using the kernel
+tree's generator when available and a built-in fallback otherwise.
 
 # Installation
 
