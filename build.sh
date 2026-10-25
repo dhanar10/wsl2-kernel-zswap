@@ -86,14 +86,6 @@ enable_if_supported ZSWAP_SHRINKER_DEFAULT_ON
 enable_if_supported ZPOOL
 enable_if_supported ZBUD
 
-# Keep an existing VGEM module or built-in driver; enable it only if disabled.
-if ! grep -Eq '^CONFIG_DRM_VGEM=[ym]$' .config; then
-  if ! grep -Eq '^CONFIG_DRM=[ym]$' .config; then
-    enable_if_supported DRM
-  fi
-  enable_if_supported DRM_VGEM
-fi
-
 make olddefconfig
 
 # Fail early if Kconfig could not satisfy the essential zswap settings. The
@@ -111,12 +103,6 @@ fi
 if kconfig_symbol_supported ZSWAP_SHRINKER_DEFAULT_ON && \
     ! grep -qx 'CONFIG_ZSWAP_SHRINKER_DEFAULT_ON=y' .config; then
   echo "Error: CONFIG_ZSWAP_SHRINKER_DEFAULT_ON is supported but could not be enabled"
-  exit 1
-fi
-
-if kconfig_symbol_supported DRM_VGEM && \
-    ! grep -Eq '^CONFIG_DRM_VGEM=[ym]$' .config; then
-  echo "Error: CONFIG_DRM_VGEM could not be enabled; check its DRM dependencies"
   exit 1
 fi
 

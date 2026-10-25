@@ -32,9 +32,6 @@ removed options in newer kernels. It also enables
 `CONFIG_ZSWAP_SHRINKER_DEFAULT_ON` when available. Kernel 6.x builds additionally
 generate a `modules.vhdx` file containing kernel modules.
 
-The script also enables `CONFIG_DRM_VGEM=y` if VGEM is disabled, preserving an
-existing built-in (`y`) or module (`m`) setting.
-
 # Installation
 
 ## Kernel 5.x
