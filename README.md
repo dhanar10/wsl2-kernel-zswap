@@ -30,7 +30,8 @@ the zswap options that kernel supports. This keeps older kernels that require
 `CONFIG_FRONTSWAP`, `CONFIG_ZPOOL`, and `CONFIG_ZBUD` working while avoiding
 removed options in newer kernels. It also enables
 `CONFIG_ZSWAP_SHRINKER_DEFAULT_ON` when available. Kernel 6.x builds additionally
-generate a `modules.vhdx` file containing kernel modules.
+generate a `modules.vhdx` file containing kernel modules, using the kernel
+tree's generator when available and a built-in fallback otherwise.
 
 # Installation
 

@@ -74,6 +74,41 @@ select_choice_if_supported() {
   echo "Selected CONFIG_${selected_symbol}"
 }
 
+generate_modules_vhdx() (
+  local modules_dir="$1"
+  local kernel_release="$2"
+  local output="$3"
+  local module_tree="${modules_dir}/lib/modules/${kernel_release}"
+  local temp_dir
+  local modules_size
+  local image_size
+
+  if [[ ! -d "${module_tree}" ]]; then
+    echo "Error: Could not find installed modules at ${module_tree}" >&2
+    return 1
+  fi
+
+  if [[ -e "${output}" ]]; then
+    echo "Error: Refusing to overwrite existing file ${output}" >&2
+    return 1
+  fi
+
+  modules_size=$(du -sb -- "${module_tree}" | awk '{print $1}')
+  image_size=$(( ((modules_size + 256 * 1024 * 1024 + 1048575) / 1048576) * 1048576 ))
+  temp_dir=$(mktemp -d)
+  trap 'rm -rf -- "${temp_dir}"' EXIT
+
+  truncate -s "${image_size}" "${temp_dir}/modules.img"
+  if ! mkfs.ext4 -F -d "${module_tree}" "${temp_dir}/modules.img"; then
+    echo "Error: Failed to create ext4 filesystem for kernel modules" >&2
+    return 1
+  fi
+  if ! qemu-img convert -O vhdx "${temp_dir}/modules.img" "${output}"; then
+    echo "Error: Failed to convert kernel modules image to VHDX" >&2
+    return 1
+  fi
+)
+
 enable_if_supported CRYPTO_ZSTD
 enable_if_supported ZSTD_COMMON
 enable_if_supported ZSTD_COMPRESS
@@ -143,12 +178,8 @@ if [[ "${KERNEL_MAJOR_VERSION}" -ge 6 ]]; then
   if [[ ! -f "${VHDX_SCRIPT}" ]]; then
     VHDX_SCRIPT="./Microsoft/scripts/gen_modules_vhdx.sh"
   fi
-  if [[ ! -f "${VHDX_SCRIPT}" ]]; then
-    echo "Error: Could not find Microsoft's VHDX generator script"
-    exit 1
-  fi
 
-  if [[ "${VHDX_SCRIPT}" == "./Microsoft/scripts/gen_artifacts_vhdx.sh" ]]; then
+  if [[ -f "${VHDX_SCRIPT}" ]] && [[ "${VHDX_SCRIPT}" == "./Microsoft/scripts/gen_artifacts_vhdx.sh" ]]; then
     if ! make headers_install INSTALL_HDR_PATH="${BUILD_DIR}/headers"; then
       echo "Error: Failed to install kernel headers"
       exit 1
@@ -167,7 +198,7 @@ if [[ "${KERNEL_MAJOR_VERSION}" -ge 6 ]]; then
       "${KERNEL_RELEASE}"
       "${BUILD_DIR}/modules.vhdx"
     )
-  else
+  elif [[ -f "${VHDX_SCRIPT}" ]]; then
     VHDX_ARGS=(
       "${BUILD_DIR}/modules"
       "${KERNEL_RELEASE}"
@@ -175,10 +206,18 @@ if [[ "${KERNEL_MAJOR_VERSION}" -ge 6 ]]; then
     )
   fi
 
-  echo "Creating modules VHDX using ${VHDX_SCRIPT}..."
-  if ! sudo "${VHDX_SCRIPT}" "${VHDX_ARGS[@]}"; then
-    echo "Error: Failed to create modules VHDX"
-    exit 1
+  if [[ -f "${VHDX_SCRIPT}" ]]; then
+    echo "Creating modules VHDX using ${VHDX_SCRIPT}..."
+    if ! sudo "${VHDX_SCRIPT}" "${VHDX_ARGS[@]}"; then
+      echo "Error: Failed to create modules VHDX"
+      exit 1
+    fi
+  else
+    echo "Microsoft's VHDX generator was not found; using the built-in fallback..."
+    if ! generate_modules_vhdx "${BUILD_DIR}/modules" "${KERNEL_RELEASE}" "${BUILD_DIR}/modules.vhdx"; then
+      echo "Error: Failed to create modules VHDX"
+      exit 1
+    fi
   fi
 
   # Cleanup modules directory and remove trap
