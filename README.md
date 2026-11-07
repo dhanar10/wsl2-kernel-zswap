@@ -69,5 +69,5 @@ cat /sys/module/zswap/parameters/enabled
 # Should output: Y
 
 cat /sys/module/zswap/parameters/compressor
-# Should output: zstd
+# Should output: lz4
 ```

@@ -109,12 +109,12 @@ generate_modules_vhdx() (
   fi
 )
 
-enable_if_supported CRYPTO_ZSTD
-enable_if_supported ZSTD_COMMON
-enable_if_supported ZSTD_COMPRESS
+enable_if_supported CRYPTO_LZ4
+enable_if_supported LZ4_COMPRESS
+enable_if_supported LZ4_DECOMPRESS
 enable_if_supported FRONTSWAP
 enable_if_supported ZSWAP
-select_choice_if_supported ZSWAP_COMPRESSOR_DEFAULT_ ZSWAP_COMPRESSOR_DEFAULT_ZSTD
+select_choice_if_supported ZSWAP_COMPRESSOR_DEFAULT_ ZSWAP_COMPRESSOR_DEFAULT_LZ4
 select_choice_if_supported ZSWAP_ZPOOL_DEFAULT_ ZSWAP_ZPOOL_DEFAULT_ZBUD
 enable_if_supported ZSWAP_DEFAULT_ON
 enable_if_supported ZSWAP_SHRINKER_DEFAULT_ON
